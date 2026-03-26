@@ -1,0 +1,5 @@
+# Temporary PowerShell scripts created by Stop-Monitor.bat
+*.tmp.ps1
+
+# Log output (stored in %USERPROFILE%\ProcessMonitorLogs, not the repo)
+*.log

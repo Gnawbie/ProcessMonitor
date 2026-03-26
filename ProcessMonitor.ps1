@@ -166,9 +166,10 @@ while ($script:Running) {
         $evt  = $watcher.WaitForNextEvent()
         $data = $evt.Properties
 
-        $procName = $data["ProcessName"].Value
-        $procPID  = $data["ProcessId"].Value
-        $exitCode = [uint32]$data["ExitStatus"].Value
+        $procName  = $data["ProcessName"].Value
+        $procPID   = $data["ProcessId"].Value
+        $parentPID = $data["ParentProcessId"].Value
+        $exitCode  = [uint32]$data["ExitStatus"].Value
         $timestamp = Get-Date -Format "HH:mm:ss"
 
         if ($SkipPIDs -contains $procPID)   { continue }
@@ -178,15 +179,26 @@ while ($script:Running) {
         $tag     = if ($isError) { "ERROR " } else { "CLOSE " }
         $exitStr = Format-ExitCode -Code $exitCode
 
+        # Try to identify the parent process (usually still alive at child exit)
+        $parentTag = ""
+        if ($parentPID -gt 0) {
+            $parentProc = Get-Process -Id $parentPID -ErrorAction SilentlyContinue
+            if ($parentProc) {
+                $parentTag = "  [spawned by: $($parentProc.Name) ($parentPID)]"
+            } else {
+                $parentTag = "  [spawned by: ??? (PID $parentPID - already gone)]"
+            }
+        }
+
         $pidStr = $procPID.ToString().PadLeft(6)
         $extStr = $exitStr.PadRight(24)
-        $line   = "[{0}] {1} | PID: {2} | Exit: {3} | {4}" -f $timestamp, $tag, $pidStr, $extStr, $procName
+        $line   = "[{0}] {1} | PID: {2} | Exit: {3} | {4}{5}" -f $timestamp, $tag, $pidStr, $extStr, $procName, $parentTag
         Write-Entry -Line $line -IsError $isError
 
         # Show a tray balloon on crashes (unless muted)
         if ($isError -and -not $script:Muted) {
             $tray.BalloonTipTitle = "Crash detected"
-            $tray.BalloonTipText  = "$procName exited with $exitStr"
+            $tray.BalloonTipText  = "$procName exited with $exitStr$parentTag"
             $tray.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Warning
             $tray.ShowBalloonTip(4000)
         }

@@ -8,8 +8,9 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 # ── Config ───────────────────────────────────────────────────
-$LogDir  = Join-Path $env:USERPROFILE "ProcessMonitorLogs"
-$PidFile = Join-Path $LogDir ".monitor.pid"
+$LogDir      = Join-Path $env:USERPROFILE "ProcessMonitorLogs"
+$PidFile     = Join-Path $LogDir ".monitor.pid"
+$SettingsFile = Join-Path $LogDir "settings.cfg"
 
 $SkipPIDs  = @(0, 4)
 $SkipNames = @("System", "Idle", "Registry", "smss.exe", "csrss.exe")
@@ -74,10 +75,9 @@ function New-TrayIcon {
 }
 
 # ── Tray icon setup ───────────────────────────────────────────
-$tray          = New-Object System.Windows.Forms.NotifyIcon
-$tray.Icon     = New-TrayIcon -Color "Green"
-$tray.Text     = "Process Monitor - Running"
-$tray.Visible  = $true
+$tray         = New-Object System.Windows.Forms.NotifyIcon
+$tray.Icon    = New-TrayIcon -Color "Green"
+$tray.Visible = $true
 
 # Right-click context menu
 $menu        = New-Object System.Windows.Forms.ContextMenuStrip
@@ -93,12 +93,21 @@ $menuLogs.Text = "Open Log Folder"
 $menuLogs.Add_Click({ Start-Process explorer $LogDir })
 $menu.Items.Add($menuLogs) | Out-Null
 
+# Load persisted mute state
 $script:Muted = $false
+if (Test-Path $SettingsFile) {
+    $saved = Get-Content $SettingsFile | ConvertFrom-StringData
+    if ($saved.Muted -eq "true") { $script:Muted = $true }
+}
+
 $menuMute = New-Object System.Windows.Forms.ToolStripMenuItem
-$menuMute.Text = "Mute Notifications"
+$menuMute.Text        = "Mute Notifications"
 $menuMute.CheckOnClick = $true
+$menuMute.Checked     = $script:Muted
 $menuMute.Add_Click({
     $script:Muted = $menuMute.Checked
+    # Persist to disk
+    "Muted=$($script:Muted.ToString().ToLower())" | Set-Content $SettingsFile -Encoding ASCII
     if ($script:Muted) {
         $tray.Text = "Process Monitor - Running (muted)"
     } else {
@@ -119,6 +128,7 @@ $menuStop.Add_Click({
 $menu.Items.Add($menuStop) | Out-Null
 
 $tray.ContextMenuStrip = $menu
+$tray.Text = if ($script:Muted) { "Process Monitor - Running (muted)" } else { "Process Monitor - Running" }
 
 # Double-click opens log folder too
 $tray.Add_DoubleClick({ Start-Process explorer $LogDir })

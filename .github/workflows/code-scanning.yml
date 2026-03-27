@@ -27,15 +27,6 @@ jobs:
         with:
           path: ./
           recurse: true
-          # Include security-focused rules
-          includeRule: >-
-            PSAvoidUsingPlainTextForPassword,
-            PSAvoidUsingConvertToSecureStringWithPlainText,
-            PSAvoidUsingUsernameAndPasswordParams,
-            PSAvoidUsingWriteHost,
-            PSUseShouldProcessForStateChangingFunctions,
-            PSAvoidInvokingEmptyMembers,
-            PSAvoidUsingInvokeExpression
           output: results.sarif
           errorAction: SilentlyContinue
           warningAction: SilentlyContinue

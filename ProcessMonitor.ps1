@@ -50,7 +50,7 @@ function Format-ExitCode {
 # ── Known exit code descriptions ─────────────────────────────
 # Each entry has a Short (log tag) and Plain (layman explanation)
 $script:ExitCodeTable = @{
-    [uint32]0x00000001 = @{ Short="generic error";                Plain="The program exited with a generic failure code — no specific crash reason was recorded." }
+    [uint32]0x00000001 = @{ Short="generic error";                Plain="The program exited with a generic failure code - no specific crash reason was recorded." }
     [uint32]0x00000002 = @{ Short="file not found";               Plain="The program could not find a file it needed. It may have been moved, deleted, or never installed." }
     [uint32]0x00000003 = @{ Short="path not found";               Plain="The program tried to access a folder that does not exist. A reinstall may fix this." }
     [uint32]0x00000005 = @{ Short="access denied";                Plain="The program was blocked from accessing a file or resource. Try running as administrator." }
@@ -64,7 +64,7 @@ $script:ExitCodeTable = @{
     [uint32]0xC0000135 = @{ Short="DLL not found";                Plain="A required library file (.dll) is missing. Try reinstalling the program or installing the relevant runtime (e.g. Visual C++ Redistributable)." }
     [uint32]0xC0000142 = @{ Short="DLL init failed";              Plain="A required library loaded but failed to start. This can be caused by a corrupt install, a missing dependency, or an antivirus blocking it." }
     [uint32]0xC0000374 = @{ Short="heap corruption";              Plain="The program's memory was corrupted while it was running. Often caused by a bug, an incompatible mod or plugin, or a faulty RAM stick." }
-    [uint32]0xC0000409 = @{ Short="stack buffer overrun";         Plain="The program wrote data past the end of a reserved memory area. This is a serious bug — if it keeps happening, check for malware or a bad update." }
+    [uint32]0xC0000409 = @{ Short="stack buffer overrun";         Plain="The program wrote data past the end of a reserved memory area. This is a serious bug - if it keeps happening, check for malware or a bad update." }
     [uint32]0xC000041D = @{ Short="unhandled callback exception";  Plain="An unhandled error occurred inside a Windows callback. Usually a bug in the program or an incompatible system component." }
     [uint32]0xC0000602 = @{ Short="fail fast exception";          Plain="The program detected a critical internal error and shut itself down on purpose. Check the program's own logs for details." }
     [uint32]0xE0434352 = @{ Short=".NET CLR exception";           Plain="An unhandled error occurred in a .NET application. Check the Windows Event Viewer (Application log) for the full error message and stack trace." }
@@ -113,7 +113,8 @@ function Get-WerCrashDetail {
         $parts = @()
         if ($module) { $parts += "module: $module" }
         if ($exc)    { $parts += "exception: $exc" }
-        if ($parts) { return $parts -join " | " } else { return $null }
+        if ($parts.Count -gt 0) { return ($parts -join " | ") }
+        return $null
     }
     catch { return $null }
 }

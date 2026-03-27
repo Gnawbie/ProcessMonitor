@@ -47,6 +47,68 @@ function Format-ExitCode {
     return "$Code ($hex)"
 }
 
+# ── Known exit code descriptions ─────────────────────────────
+$script:ExitCodeTable = @{
+    [uint32]0x00000001 = "generic error"
+    [uint32]0x00000002 = "file not found"
+    [uint32]0x00000003 = "path not found"
+    [uint32]0x00000005 = "access denied"
+    [uint32]0x00000102 = "wait timeout"
+    [uint32]0xC0000005 = "access violation"
+    [uint32]0xC0000017 = "no memory"
+    [uint32]0xC000001D = "illegal instruction"
+    [uint32]0xC000008E = "FP divide by zero"
+    [uint32]0xC0000094 = "integer divide by zero"
+    [uint32]0xC00000FD = "stack overflow"
+    [uint32]0xC0000135 = "DLL not found"
+    [uint32]0xC0000142 = "DLL init failed"
+    [uint32]0xC0000374 = "heap corruption"
+    [uint32]0xC0000409 = "stack buffer overrun"
+    [uint32]0xC000041D = "unhandled callback exception"
+    [uint32]0xC0000602 = "fail fast exception"
+    [uint32]0xE0434352 = ".NET CLR exception"
+    [uint32]0xCFFFFFFF = "game/custom crash code"
+}
+
+function Get-ExitCodeDescription {
+    param([uint32]$Code)
+    if ($script:ExitCodeTable.ContainsKey($Code)) { return $script:ExitCodeTable[$Code] }
+    if ($Code -ge [uint32]0xC0000000 -and $Code -le [uint32]0xCFFFFFFF) { return "unhandled exception" }
+    if ($Code -ge [uint32]0xE0000000) { return "user-defined exception" }
+    return $null
+}
+
+function Get-WerCrashDetail {
+    param([string]$ProcessName, [datetime]$CrashTime)
+    try {
+        # Give Windows Error Reporting a moment to write the event
+        Start-Sleep -Milliseconds 1000
+        $events = Get-WinEvent -FilterHashtable @{
+            LogName   = 'Application'
+            Id        = 1000
+            StartTime = $CrashTime.AddSeconds(-5)
+        } -MaxEvents 20 -ErrorAction SilentlyContinue
+        if (-not $events) { return $null }
+
+        $baseName = $ProcessName -replace '\.exe$', ''
+        $evt = $events | Where-Object {
+            $_.Message -match [regex]::Escape($ProcessName) -or
+            $_.Message -match [regex]::Escape($baseName)
+        } | Select-Object -First 1
+        if (-not $evt) { return $null }
+
+        $msg    = $evt.Message
+        $module = if ($msg -match 'Faulting module name:\s*([^,\r\n]+)') { $Matches[1].Trim() } else { $null }
+        $exc    = if ($msg -match 'Exception code:\s*(0x[0-9A-Fa-f]+)')  { $Matches[1].Trim() } else { $null }
+
+        $parts = @()
+        if ($module) { $parts += "module: $module" }
+        if ($exc)    { $parts += "exception: $exc" }
+        return if ($parts) { $parts -join " | " } else { $null }
+    }
+    catch { return $null }
+}
+
 # ── Build tray icon (drawn with GDI+ - no .ico file needed) ──
 function New-TrayIcon {
     param([string]$Color = "Green")
@@ -200,15 +262,26 @@ while ($script:Running) {
             }
         }
 
+        # Build crash context tag for error exits
+        $crashTag = ""
+        if ($isError) {
+            $desc   = Get-ExitCodeDescription -Code $exitCode
+            $wer    = Get-WerCrashDetail -ProcessName $procName -CrashTime (Get-Date)
+            $parts  = @()
+            if ($desc) { $parts += $desc }
+            if ($wer)  { $parts += $wer }
+            if ($parts) { $crashTag = "  [crash: $($parts -join ' | ')]" }
+        }
+
         $pidStr = $procPID.ToString().PadLeft(6)
         $extStr = $exitStr.PadRight(24)
-        $line   = "[{0}] {1} | PID: {2} | Exit: {3} | {4}{5}" -f $timestamp, $tag, $pidStr, $extStr, $procName, $parentTag
+        $line   = "[{0}] {1} | PID: {2} | Exit: {3} | {4}{5}{6}" -f $timestamp, $tag, $pidStr, $extStr, $procName, $parentTag, $crashTag
         Write-Entry -Line $line -IsError $isError
 
         # Show a tray balloon on crashes (unless muted)
         if ($isError -and -not $script:Muted) {
             $tray.BalloonTipTitle = "Crash detected"
-            $tray.BalloonTipText  = "$procName exited with $exitStr$parentTag"
+            $tray.BalloonTipText  = "$procName exited with $exitStr$crashTag"
             $tray.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Warning
             $tray.ShowBalloonTip(4000)
         }

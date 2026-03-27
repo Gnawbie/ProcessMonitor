@@ -113,7 +113,7 @@ function Get-WerCrashDetail {
         $parts = @()
         if ($module) { $parts += "module: $module" }
         if ($exc)    { $parts += "exception: $exc" }
-        return if ($parts) { $parts -join " | " } else { $null }
+        if ($parts) { return $parts -join " | " } else { return $null }
     }
     catch { return $null }
 }

@@ -1,0 +1,47 @@
+name: Code Scanning (PSScriptAnalyzer)
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    # Run every Sunday at midnight to catch new rule updates
+    - cron: '0 0 * * 0'
+
+jobs:
+  psscriptanalyzer:
+    name: Scan PowerShell
+    runs-on: windows-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run PSScriptAnalyzer
+        uses: microsoft/psscriptanalyzer-action@v1.1
+        with:
+          path: ./
+          recurse: true
+          # Include security-focused rules
+          includeRule: >-
+            PSAvoidUsingPlainTextForPassword,
+            PSAvoidUsingConvertToSecureStringWithPlainText,
+            PSAvoidUsingUsernameAndPasswordParams,
+            PSAvoidUsingWriteHost,
+            PSUseShouldProcessForStateChangingFunctions,
+            PSAvoidInvokingEmptyMembers,
+            PSAvoidUsingInvokeExpression
+          output: results.sarif
+          errorAction: SilentlyContinue
+          warningAction: SilentlyContinue
+
+      - name: Upload results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif

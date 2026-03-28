@@ -258,7 +258,9 @@ while ($script:Running) {
         if ($SkipNames -contains $procName) { continue }
 
         $isError = $exitCode -ne 0
-        $tag     = if ($isError) { "ERROR " } else { "CLOSE " }
+        if (-not $isError) { continue }   # ignore clean exits
+
+        $tag = "ERROR "
         $exitStr = Format-ExitCode -Code $exitCode
 
         # Try to identify the parent process (usually still alive at child exit)

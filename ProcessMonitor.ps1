@@ -245,13 +245,16 @@ while ($script:Running) {
     }
 
     try {
-        $evt  = $watcher.WaitForNextEvent()
-        $data = $evt.Properties
+        $evt = $watcher.WaitForNextEvent()
+        if ($null -eq $evt) { continue }
 
-        $procName  = $data["ProcessName"].Value
-        $procPID   = $data["ProcessId"].Value
-        $parentPID = $data["ParentProcessId"].Value
-        $exitCode  = [uint32]$data["ExitStatus"].Value
+        $data      = $evt.Properties
+        $procName  = if ($data["ProcessName"])    { $data["ProcessName"].Value }    else { $null }
+        $procPID   = if ($data["ProcessId"])      { $data["ProcessId"].Value }      else { $null }
+        $parentPID = if ($data["ParentProcessId"]){ $data["ParentProcessId"].Value } else { 0 }
+        $exitCode  = if ($data["ExitStatus"])     { [uint32]$data["ExitStatus"].Value } else { 0 }
+
+        if ($null -eq $procName -or $null -eq $procPID) { continue }
         $timestamp = Get-Date -Format "HH:mm:ss"
 
         if ($SkipPIDs -contains $procPID)   { continue }

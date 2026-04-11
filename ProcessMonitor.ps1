@@ -48,42 +48,48 @@ function Format-ExitCode {
 }
 
 # ── Known exit code descriptions ─────────────────────────────
-# Each entry has a Short (log tag) and Plain (layman explanation)
+# Keys are uppercase 8-digit hex strings (e.g. "0xC0000005") to avoid
+# PS 5.1 signed/unsigned integer casting issues with [uint32] key syntax.
 $script:ExitCodeTable = @{
-    [uint32]0x00000001 = @{ Short="generic error";                Plain="The program exited with a generic failure code - no specific crash reason was recorded." }
-    [uint32]0x00000002 = @{ Short="file not found";               Plain="The program could not find a file it needed. It may have been moved, deleted, or never installed." }
-    [uint32]0x00000003 = @{ Short="path not found";               Plain="The program tried to access a folder that does not exist. A reinstall may fix this." }
-    [uint32]0x00000005 = @{ Short="access denied";                Plain="The program was blocked from accessing a file or resource. Try running as administrator." }
-    [uint32]0x00000102 = @{ Short="wait timeout";                 Plain="The program waited too long for something to respond (a server, a file, another process) and gave up." }
-    [uint32]0xC0000005 = @{ Short="access violation";             Plain="The program tried to read or write memory it does not own. Usually a bug, bad mod/plugin, or driver conflict. A reinstall or update may help." }
-    [uint32]0xC0000017 = @{ Short="out of memory";                Plain="The program ran out of memory. Try closing other applications, or your system may need more RAM." }
-    [uint32]0xC000001D = @{ Short="illegal instruction";          Plain="The program tried to execute an invalid CPU instruction. This can mean corrupt install files, hardware incompatibility, or overclocking instability." }
-    [uint32]0xC000008E = @{ Short="FP divide by zero";            Plain="The program tried to divide a decimal number by zero. This is a bug in the program." }
-    [uint32]0xC0000094 = @{ Short="integer divide by zero";       Plain="The program tried to divide a whole number by zero. This is a bug in the program." }
-    [uint32]0xC00000FD = @{ Short="stack overflow";               Plain="The program ran out of stack space, usually from a function calling itself indefinitely. This is a bug in the program." }
-    [uint32]0xC0000135 = @{ Short="DLL not found";                Plain="A required library file (.dll) is missing. Try reinstalling the program or installing the relevant runtime (e.g. Visual C++ Redistributable)." }
-    [uint32]0xC0000142 = @{ Short="DLL init failed";              Plain="A required library loaded but failed to start. This can be caused by a corrupt install, a missing dependency, or an antivirus blocking it." }
-    [uint32]0xC0000374 = @{ Short="heap corruption";              Plain="The program's memory was corrupted while it was running. Often caused by a bug, an incompatible mod or plugin, or a faulty RAM stick." }
-    [uint32]0xC0000409 = @{ Short="stack buffer overrun";         Plain="The program wrote data past the end of a reserved memory area. This is a serious bug - if it keeps happening, check for malware or a bad update." }
-    [uint32]0xC000041D = @{ Short="unhandled callback exception";  Plain="An unhandled error occurred inside a Windows callback. Usually a bug in the program or an incompatible system component." }
-    [uint32]0xC0000602 = @{ Short="fail fast exception";          Plain="The program detected a critical internal error and shut itself down on purpose. Check the program's own logs for details." }
-    [uint32]0xE0434352 = @{ Short=".NET CLR exception";           Plain="An unhandled error occurred in a .NET application. Check the Windows Event Viewer (Application log) for the full error message and stack trace." }
-    [uint32]0xCFFFFFFF = @{ Short="game/custom crash code";       Plain="The game or program caught an internal error and exited with its own crash code. Check the game's own crash log or support site for details." }
+    "0x00000001" = @{ Short="generic error";                Plain="The program exited with a generic failure code - no specific crash reason was recorded." }
+    "0x00000002" = @{ Short="file not found";               Plain="The program could not find a file it needed. It may have been moved, deleted, or never installed." }
+    "0x00000003" = @{ Short="path not found";               Plain="The program tried to access a folder that does not exist. A reinstall may fix this." }
+    "0x00000005" = @{ Short="access denied";                Plain="The program was blocked from accessing a file or resource. Try running as administrator." }
+    "0x00000102" = @{ Short="wait timeout";                 Plain="The program waited too long for something to respond (a server, a file, another process) and gave up." }
+    "0xC0000005" = @{ Short="access violation";             Plain="The program tried to read or write memory it does not own. Usually a bug, bad mod/plugin, or driver conflict. A reinstall or update may help." }
+    "0xC0000017" = @{ Short="out of memory";                Plain="The program ran out of memory. Try closing other applications, or your system may need more RAM." }
+    "0xC000001D" = @{ Short="illegal instruction";          Plain="The program tried to execute an invalid CPU instruction. This can mean corrupt install files, hardware incompatibility, or overclocking instability." }
+    "0xC000008E" = @{ Short="FP divide by zero";            Plain="The program tried to divide a decimal number by zero. This is a bug in the program." }
+    "0xC0000094" = @{ Short="integer divide by zero";       Plain="The program tried to divide a whole number by zero. This is a bug in the program." }
+    "0xC00000FD" = @{ Short="stack overflow";               Plain="The program ran out of stack space, usually from a function calling itself indefinitely. This is a bug in the program." }
+    "0xC0000135" = @{ Short="DLL not found";                Plain="A required library file (.dll) is missing. Try reinstalling the program or installing the relevant runtime (e.g. Visual C++ Redistributable)." }
+    "0xC0000142" = @{ Short="DLL init failed";              Plain="A required library loaded but failed to start. This can be caused by a corrupt install, a missing dependency, or an antivirus blocking it." }
+    "0xC0000374" = @{ Short="heap corruption";              Plain="The program's memory was corrupted while it was running. Often caused by a bug, an incompatible mod or plugin, or a faulty RAM stick." }
+    "0xC0000409" = @{ Short="stack buffer overrun";         Plain="The program wrote data past the end of a reserved memory area. This is a serious bug - if it keeps happening, check for malware or a bad update." }
+    "0xC000041D" = @{ Short="unhandled callback exception"; Plain="An unhandled error occurred inside a Windows callback. Usually a bug in the program or an incompatible system component." }
+    "0xC0000602" = @{ Short="fail fast exception";          Plain="The program detected a critical internal error and shut itself down on purpose. Check the program's own logs for details." }
+    "0xE0434352" = @{ Short=".NET CLR exception";           Plain="An unhandled error occurred in a .NET application. Check the Windows Event Viewer (Application log) for the full error message and stack trace." }
+    "0xCFFFFFFF" = @{ Short="game/custom crash code";       Plain="The game or program caught an internal error and exited with its own crash code. Check the game's own crash log or support site for details." }
 }
+
+function Get-ExitCodeKey  { param([uint32]$Code); return "0x{0:X8}" -f $Code }
 
 function Get-ExitCodeDescription {
     param([uint32]$Code)
-    if ($script:ExitCodeTable.ContainsKey($Code)) { return $script:ExitCodeTable[$Code].Short }
-    if ($Code -ge [uint32]0xC0000000 -and $Code -le [uint32]0xCFFFFFFF) { return "unhandled exception" }
-    if ($Code -ge [uint32]0xE0000000) { return "user-defined exception" }
+    $key = Get-ExitCodeKey $Code
+    if ($script:ExitCodeTable.ContainsKey($key)) { return $script:ExitCodeTable[$key].Short }
+    # 0xC0000000-0xCFFFFFFF = Windows NTSTATUS errors; 0xE0000000+ = user-defined
+    if ($Code -ge 3221225472 -and $Code -le 3489660927) { return "unhandled exception" }
+    if ($Code -ge 3758096384) { return "user-defined exception" }
     return $null
 }
 
 function Get-ExitCodePlain {
     param([uint32]$Code)
-    if ($script:ExitCodeTable.ContainsKey($Code)) { return $script:ExitCodeTable[$Code].Plain }
-    if ($Code -ge [uint32]0xC0000000 -and $Code -le [uint32]0xCFFFFFFF) { return "An unhandled Windows exception caused the program to crash." }
-    if ($Code -ge [uint32]0xE0000000) { return "The program exited with a user-defined exception code. Check the program's own logs for details." }
+    $key = Get-ExitCodeKey $Code
+    if ($script:ExitCodeTable.ContainsKey($key)) { return $script:ExitCodeTable[$key].Plain }
+    if ($Code -ge 3221225472 -and $Code -le 3489660927) { return "An unhandled Windows exception caused the program to crash." }
+    if ($Code -ge 3758096384) { return "The program exited with a user-defined exception code. Check the program's own logs for details." }
     return $null
 }
 
